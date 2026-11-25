@@ -114,7 +114,7 @@ If you find this plugin useful and would like to support its development, you ca
   <table>
     <tr>
       <td align="center">
-        <img src="images/wechat.png" alt="WeChat" width="200"><br>
+        <img src="images/wechat.png" alt="wechat-pay" width="200"><br>
         <b>微信 WeChat</b>
       </td>
       <td align="center">
