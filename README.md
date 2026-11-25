@@ -110,4 +110,11 @@ The plugin makes no network requests and collects no data.
 ## ☕ Support Development
 If you find this plugin useful and would like to support its development, you can sponsor me via WeChat or Alipay. Any amount is welcome, thank you!
 
+
+
+
+| <img src="images/wechat.png" width="150"> | <img src="images/alipay.png" width="150"> |
+| :---: | :---: |
+| 微信 WeChat | 支付宝 Alipay |
+
 | <img src="images/wechat-pay.png" width="180"> | <img src="images/alipay.png" width="180"> |
