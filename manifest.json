@@ -4,7 +4,7 @@
   "version": "1.2.0",
   "minAppVersion": "1.4.0",
   "description": "Notion-style Markdown tables: drag to resize columns, header highlighting, table styles, roomier spacing, frozen headers, row and column colors, alignment, transpose and copy as CSV or LaTeX.",
-  "author": "YOUR_NAME",
-  "authorUrl": "https://github.com/YOUR_GITHUB_USERNAME",
+  "author": "pupu31415926-ux",
+  "authorUrl": "https://github.com/pupu31415926-ux",
   "isDesktopOnly": false
 }
