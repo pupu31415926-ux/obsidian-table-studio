@@ -114,11 +114,11 @@ If you find this plugin useful and would like to support its development, you ca
   <table>
     <tr>
       <td align="center">
-        <img src="images/wechat.png" alt="wechat-pay" width="200"><br>
+        <img src="images/wechat-pay.png" alt="Wechat 微信" width="200"><br>
         <b>微信 WeChat</b>
       </td>
       <td align="center">
-        <img src="images/alipay.png" alt="Alipay" width="200"><br>
+        <img src="images/alipay.png" alt="Alipay 支付宝" width="200"><br>
         <b>支付宝 Alipay</b>
       </td>
     </tr>
