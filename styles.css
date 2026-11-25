@@ -1,0 +1,764 @@
+/* =========================================================
+   浮层：拖拽指示线、宽度提示、⋯ 按钮、选中工具条
+   ========================================================= */
+.tt-resize-line {
+  position: fixed;
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--interactive-accent);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: var(--layer-popover, 30);
+  display: none;
+  opacity: 0.85;
+}
+.tt-resize-line.is-visible { display: block; }
+
+.tt-width-tip {
+  position: fixed;
+  pointer-events: none;
+  z-index: var(--layer-popover, 30);
+  display: none;
+  padding: 2px 6px;
+  font-size: var(--font-ui-smaller, 12px);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  box-shadow: var(--shadow-s);
+}
+.tt-width-tip.is-visible { display: block; }
+
+.tt-table-btn {
+  position: fixed;
+  z-index: var(--layer-popover, 30);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  cursor: pointer;
+}
+.tt-table-btn.is-visible { display: flex; }
+.tt-table-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+.tt-table-btn svg { width: 14px; height: 14px; }
+
+.tt-sel-bar {
+  position: fixed;
+  z-index: var(--layer-popover, 30);
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  transform: translateX(-50%);
+  font-size: var(--font-ui-smaller, 12px);
+  color: var(--text-muted);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  box-shadow: var(--shadow-s);
+}
+.tt-sel-bar.is-visible { display: flex; }
+.tt-sel-bar .tt-sel-label { padding: 0 6px; white-space: nowrap; }
+.tt-sel-bar .tt-sel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.tt-sel-bar .tt-sel-btn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.tt-sel-bar .tt-sel-btn svg { width: 15px; height: 15px; }
+
+body.tt-col-hover,
+body.tt-col-hover *,
+body.tt-dragging,
+body.tt-dragging * {
+  cursor: col-resize !important;
+}
+body.tt-dragging * { user-select: none !important; }
+
+/* =========================================================
+   列宽
+   ========================================================= */
+table.tt-sized {
+  table-layout: fixed;
+  max-width: none !important;
+}
+table.tt-sized > * > tr > th,
+table.tt-sized > * > tr > td {
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+table.tt-sized .table-cell-wrapper {
+  min-width: 0 !important;
+  max-width: 100%;
+}
+.markdown-rendered .el-table:has(table.tt-sized) {
+  overflow-x: auto;
+}
+
+.tt-measure {
+  position: absolute;
+  left: -100000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  width: max-content;
+  white-space: nowrap;
+}
+.tt-measure > div { width: max-content; }
+.tt-measure * {
+  white-space: nowrap !important;
+  max-width: none !important;
+}
+
+/* =========================================================
+   颜色变量（跟随主题配色）
+   ========================================================= */
+table.tt-managed {
+  --tt-head-bg: var(--background-secondary);
+  --tt-head-line: var(--background-modifier-border-hover, var(--background-modifier-border));
+  --tt-zebra-bg: rgba(var(--mono-rgb-100, 128, 128, 128), 0.035);
+  --tt-gray: rgba(var(--mono-rgb-100, 128, 128, 128), 0.09);
+  --tt-red: rgba(var(--color-red-rgb, 233, 49, 71), 0.15);
+  --tt-orange: rgba(var(--color-orange-rgb, 236, 117, 0), 0.15);
+  --tt-yellow: rgba(var(--color-yellow-rgb, 224, 172, 0), 0.18);
+  --tt-green: rgba(var(--color-green-rgb, 8, 185, 78), 0.14);
+  --tt-blue: rgba(var(--color-blue-rgb, 8, 109, 221), 0.13);
+  --tt-purple: rgba(var(--color-purple-rgb, 120, 82, 238), 0.13);
+  --tt-pink: rgba(var(--color-pink-rgb, 213, 57, 132), 0.13);
+}
+
+/* =========================================================
+   冻结标题行 / 首列（放在高亮规则之前，让高亮的底色优先）
+   ========================================================= */
+table.tt-frz-row > thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--background-primary);
+  box-shadow: inset 0 -1px 0 var(--background-modifier-border);
+}
+table.tt-frz-col > * > tr > :first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--background-primary);
+  box-shadow: inset -1px 0 0 var(--background-modifier-border);
+}
+table.tt-frz-row.tt-frz-col > thead > tr > th:first-child { z-index: 3; }
+/* 阅读视图：冻结后表格放进一个最高 70% 窗口高的滚动框，标题行 / 首列在框内固定 */
+.markdown-rendered .el-table:has(> table:is(.tt-frz-row, .tt-frz-col)) {
+  overflow: auto;
+  max-height: 70vh;
+}
+
+/* =========================================================
+   标题行 / 标题列高亮
+   ========================================================= */
+table.tt-managed.tt-hrow > thead > tr > th {
+  background-color: var(--tt-head-bg);
+  font-weight: var(--font-semibold, 600);
+  border-bottom: 2px solid var(--tt-head-line);
+}
+table.tt-managed.tt-hcol > tbody > tr > td:first-child,
+table.tt-managed.tt-hcol > thead > tr > th:first-child {
+  background-color: var(--tt-head-bg);
+  font-weight: var(--font-semibold, 600);
+}
+table.tt-managed.tt-hcol > * > tr > :first-child {
+  border-right: 2px solid var(--tt-head-line);
+}
+
+/* =========================================================
+   表格样式预设
+   ========================================================= */
+/* 极简：去掉竖线 */
+table.tt-st-minimal { border-left: none !important; border-right: none !important; }
+table.tt-st-minimal > * > tr > :is(th, td) {
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+/* 斑马纹 */
+table.tt-st-zebra > tbody > tr:nth-child(even) > td {
+  background-color: var(--tt-zebra-bg);
+}
+
+/* 三线表：顶线、表头线、底线，无竖线、无底色 */
+table.tt-st-three { border: none !important; }
+table.tt-st-three > * > tr > :is(th, td) {
+  border: none !important;
+  background-color: transparent !important;
+}
+table.tt-st-three > thead > tr > th {
+  border-top: 2px solid var(--text-normal, currentColor) !important;
+  border-bottom: 1px solid var(--text-normal, currentColor) !important;
+}
+table.tt-st-three > tbody > tr:last-child > td {
+  border-bottom: 2px solid var(--text-normal, currentColor) !important;
+}
+table.tt-st-three.tt-frz-row > thead > tr > th,
+table.tt-st-three.tt-frz-col > * > tr > :first-child {
+  background-color: var(--background-primary) !important;
+}
+
+/* =========================================================
+   行距（只作用于调整过的表格）
+   ========================================================= */
+table.tt-adjusted.tt-d-c { --tt-pad: 8px 12px; --tt-lh: 1.55; --tt-row-h: 36px; }
+table.tt-adjusted.tt-d-s { --tt-pad: 12px 14px; --tt-lh: 1.65; --tt-row-h: 44px; }
+
+table.tt-adjusted:is(.tt-d-c, .tt-d-s) > * > tr { height: var(--tt-row-h); }
+table.tt-adjusted:is(.tt-d-c, .tt-d-s) > * > tr > :is(th, td) {
+  padding: var(--tt-pad);
+  line-height: var(--tt-lh);
+}
+/* 实时预览：内边距在 .table-cell-wrapper 上 */
+table.tt-adjusted:is(.tt-d-c, .tt-d-s) > * > tr > :is(th, td):has(> .table-cell-wrapper) {
+  padding: 0;
+}
+table.tt-adjusted:is(.tt-d-c, .tt-d-s) .table-cell-wrapper {
+  padding: var(--tt-pad);
+  line-height: var(--tt-lh);
+}
+/* 编辑单元格时不跳动：单元格里的嵌套编辑器沿用同样的行高，去掉它自带的上下内边距 */
+table.tt-adjusted:is(.tt-d-c, .tt-d-s) .table-cell-wrapper :is(.cm-editor, .cm-scroller, .cm-content, .cm-line) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: inherit !important;
+}
+table.tt-adjusted:is(.tt-d-c, .tt-d-s) .table-cell-wrapper .cm-content {
+  min-height: 0 !important;
+}
+.markdown-rendered .el-table:has(> table.tt-adjusted:is(.tt-d-c, .tt-d-s)) {
+  margin-block: 1.25em;
+}
+
+table.tt-adjusted.tt-va-middle {
+  --table-cell-vertical-alignment: middle;
+}
+table.tt-adjusted.tt-va-middle > * > tr > :is(th, td) { vertical-align: middle; }
+table.tt-adjusted.tt-va-top {
+  --table-cell-vertical-alignment: top;
+}
+table.tt-adjusted.tt-va-top > * > tr > :is(th, td) { vertical-align: top; }
+
+/* =========================================================
+   行对齐（覆盖列对齐）
+   ========================================================= */
+table.tt-managed > * > tr[data-tt-align="left"] > :is(th, td),
+table.tt-managed > * > tr[data-tt-align="left"] > :is(th, td) .table-cell-wrapper {
+  text-align: left !important;
+}
+table.tt-managed > * > tr[data-tt-align="center"] > :is(th, td),
+table.tt-managed > * > tr[data-tt-align="center"] > :is(th, td) .table-cell-wrapper {
+  text-align: center !important;
+}
+table.tt-managed > * > tr[data-tt-align="right"] > :is(th, td),
+table.tt-managed > * > tr[data-tt-align="right"] > :is(th, td) .table-cell-wrapper {
+  text-align: right !important;
+}
+
+/* =========================================================
+   行 / 列背景色：叠在底色（高亮、斑马纹）之上
+   ========================================================= */
+table.tt-has-color > * > tr > :is(th, td) {
+  background-image:
+    linear-gradient(var(--tt-row-bg, transparent), var(--tt-row-bg, transparent)),
+    linear-gradient(var(--tt-col-bg, transparent), var(--tt-col-bg, transparent));
+}
+
+/* =========================================================
+   以下由 build.py 生成：按列的换行与背景色（最多 32 列）
+   ========================================================= */
+
+/* 按列不换行：截断显示为省略号 */
+table.tt-managed[data-tt-nw~="c1"] > * > tr > :nth-child(1):not(:focus-within),
+table.tt-managed[data-tt-nw~="c2"] > * > tr > :nth-child(2):not(:focus-within),
+table.tt-managed[data-tt-nw~="c3"] > * > tr > :nth-child(3):not(:focus-within),
+table.tt-managed[data-tt-nw~="c4"] > * > tr > :nth-child(4):not(:focus-within),
+table.tt-managed[data-tt-nw~="c5"] > * > tr > :nth-child(5):not(:focus-within),
+table.tt-managed[data-tt-nw~="c6"] > * > tr > :nth-child(6):not(:focus-within),
+table.tt-managed[data-tt-nw~="c7"] > * > tr > :nth-child(7):not(:focus-within),
+table.tt-managed[data-tt-nw~="c8"] > * > tr > :nth-child(8):not(:focus-within),
+table.tt-managed[data-tt-nw~="c9"] > * > tr > :nth-child(9):not(:focus-within),
+table.tt-managed[data-tt-nw~="c10"] > * > tr > :nth-child(10):not(:focus-within),
+table.tt-managed[data-tt-nw~="c11"] > * > tr > :nth-child(11):not(:focus-within),
+table.tt-managed[data-tt-nw~="c12"] > * > tr > :nth-child(12):not(:focus-within),
+table.tt-managed[data-tt-nw~="c13"] > * > tr > :nth-child(13):not(:focus-within),
+table.tt-managed[data-tt-nw~="c14"] > * > tr > :nth-child(14):not(:focus-within),
+table.tt-managed[data-tt-nw~="c15"] > * > tr > :nth-child(15):not(:focus-within),
+table.tt-managed[data-tt-nw~="c16"] > * > tr > :nth-child(16):not(:focus-within),
+table.tt-managed[data-tt-nw~="c17"] > * > tr > :nth-child(17):not(:focus-within),
+table.tt-managed[data-tt-nw~="c18"] > * > tr > :nth-child(18):not(:focus-within),
+table.tt-managed[data-tt-nw~="c19"] > * > tr > :nth-child(19):not(:focus-within),
+table.tt-managed[data-tt-nw~="c20"] > * > tr > :nth-child(20):not(:focus-within),
+table.tt-managed[data-tt-nw~="c21"] > * > tr > :nth-child(21):not(:focus-within),
+table.tt-managed[data-tt-nw~="c22"] > * > tr > :nth-child(22):not(:focus-within),
+table.tt-managed[data-tt-nw~="c23"] > * > tr > :nth-child(23):not(:focus-within),
+table.tt-managed[data-tt-nw~="c24"] > * > tr > :nth-child(24):not(:focus-within),
+table.tt-managed[data-tt-nw~="c25"] > * > tr > :nth-child(25):not(:focus-within),
+table.tt-managed[data-tt-nw~="c26"] > * > tr > :nth-child(26):not(:focus-within),
+table.tt-managed[data-tt-nw~="c27"] > * > tr > :nth-child(27):not(:focus-within),
+table.tt-managed[data-tt-nw~="c28"] > * > tr > :nth-child(28):not(:focus-within),
+table.tt-managed[data-tt-nw~="c29"] > * > tr > :nth-child(29):not(:focus-within),
+table.tt-managed[data-tt-nw~="c30"] > * > tr > :nth-child(30):not(:focus-within),
+table.tt-managed[data-tt-nw~="c31"] > * > tr > :nth-child(31):not(:focus-within),
+table.tt-managed[data-tt-nw~="c32"] > * > tr > :nth-child(32):not(:focus-within) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+table.tt-managed[data-tt-nw~="c1"] > * > tr > :nth-child(1):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c2"] > * > tr > :nth-child(2):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c3"] > * > tr > :nth-child(3):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c4"] > * > tr > :nth-child(4):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c5"] > * > tr > :nth-child(5):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c6"] > * > tr > :nth-child(6):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c7"] > * > tr > :nth-child(7):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c8"] > * > tr > :nth-child(8):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c9"] > * > tr > :nth-child(9):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c10"] > * > tr > :nth-child(10):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c11"] > * > tr > :nth-child(11):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c12"] > * > tr > :nth-child(12):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c13"] > * > tr > :nth-child(13):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c14"] > * > tr > :nth-child(14):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c15"] > * > tr > :nth-child(15):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c16"] > * > tr > :nth-child(16):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c17"] > * > tr > :nth-child(17):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c18"] > * > tr > :nth-child(18):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c19"] > * > tr > :nth-child(19):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c20"] > * > tr > :nth-child(20):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c21"] > * > tr > :nth-child(21):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c22"] > * > tr > :nth-child(22):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c23"] > * > tr > :nth-child(23):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c24"] > * > tr > :nth-child(24):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c25"] > * > tr > :nth-child(25):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c26"] > * > tr > :nth-child(26):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c27"] > * > tr > :nth-child(27):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c28"] > * > tr > :nth-child(28):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c29"] > * > tr > :nth-child(29):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c30"] > * > tr > :nth-child(30):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c31"] > * > tr > :nth-child(31):not(:focus-within) *,
+table.tt-managed[data-tt-nw~="c32"] > * > tr > :nth-child(32):not(:focus-within) * {
+  white-space: nowrap !important;
+}
+table.tt-managed[data-tt-nw~="c1"] > * > tr > :nth-child(1):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c2"] > * > tr > :nth-child(2):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c3"] > * > tr > :nth-child(3):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c4"] > * > tr > :nth-child(4):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c5"] > * > tr > :nth-child(5):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c6"] > * > tr > :nth-child(6):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c7"] > * > tr > :nth-child(7):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c8"] > * > tr > :nth-child(8):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c9"] > * > tr > :nth-child(9):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c10"] > * > tr > :nth-child(10):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c11"] > * > tr > :nth-child(11):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c12"] > * > tr > :nth-child(12):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c13"] > * > tr > :nth-child(13):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c14"] > * > tr > :nth-child(14):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c15"] > * > tr > :nth-child(15):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c16"] > * > tr > :nth-child(16):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c17"] > * > tr > :nth-child(17):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c18"] > * > tr > :nth-child(18):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c19"] > * > tr > :nth-child(19):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c20"] > * > tr > :nth-child(20):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c21"] > * > tr > :nth-child(21):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c22"] > * > tr > :nth-child(22):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c23"] > * > tr > :nth-child(23):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c24"] > * > tr > :nth-child(24):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c25"] > * > tr > :nth-child(25):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c26"] > * > tr > :nth-child(26):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c27"] > * > tr > :nth-child(27):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c28"] > * > tr > :nth-child(28):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c29"] > * > tr > :nth-child(29):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c30"] > * > tr > :nth-child(30):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c31"] > * > tr > :nth-child(31):not(:focus-within) .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c32"] > * > tr > :nth-child(32):not(:focus-within) .table-cell-wrapper {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 编辑被截断的单元格：内容浮起完整显示，不撑高整行 */
+table.tt-managed[data-tt-nw~="c1"] > * > tr > :nth-child(1):focus-within,
+table.tt-managed[data-tt-nw~="c2"] > * > tr > :nth-child(2):focus-within,
+table.tt-managed[data-tt-nw~="c3"] > * > tr > :nth-child(3):focus-within,
+table.tt-managed[data-tt-nw~="c4"] > * > tr > :nth-child(4):focus-within,
+table.tt-managed[data-tt-nw~="c5"] > * > tr > :nth-child(5):focus-within,
+table.tt-managed[data-tt-nw~="c6"] > * > tr > :nth-child(6):focus-within,
+table.tt-managed[data-tt-nw~="c7"] > * > tr > :nth-child(7):focus-within,
+table.tt-managed[data-tt-nw~="c8"] > * > tr > :nth-child(8):focus-within,
+table.tt-managed[data-tt-nw~="c9"] > * > tr > :nth-child(9):focus-within,
+table.tt-managed[data-tt-nw~="c10"] > * > tr > :nth-child(10):focus-within,
+table.tt-managed[data-tt-nw~="c11"] > * > tr > :nth-child(11):focus-within,
+table.tt-managed[data-tt-nw~="c12"] > * > tr > :nth-child(12):focus-within,
+table.tt-managed[data-tt-nw~="c13"] > * > tr > :nth-child(13):focus-within,
+table.tt-managed[data-tt-nw~="c14"] > * > tr > :nth-child(14):focus-within,
+table.tt-managed[data-tt-nw~="c15"] > * > tr > :nth-child(15):focus-within,
+table.tt-managed[data-tt-nw~="c16"] > * > tr > :nth-child(16):focus-within,
+table.tt-managed[data-tt-nw~="c17"] > * > tr > :nth-child(17):focus-within,
+table.tt-managed[data-tt-nw~="c18"] > * > tr > :nth-child(18):focus-within,
+table.tt-managed[data-tt-nw~="c19"] > * > tr > :nth-child(19):focus-within,
+table.tt-managed[data-tt-nw~="c20"] > * > tr > :nth-child(20):focus-within,
+table.tt-managed[data-tt-nw~="c21"] > * > tr > :nth-child(21):focus-within,
+table.tt-managed[data-tt-nw~="c22"] > * > tr > :nth-child(22):focus-within,
+table.tt-managed[data-tt-nw~="c23"] > * > tr > :nth-child(23):focus-within,
+table.tt-managed[data-tt-nw~="c24"] > * > tr > :nth-child(24):focus-within,
+table.tt-managed[data-tt-nw~="c25"] > * > tr > :nth-child(25):focus-within,
+table.tt-managed[data-tt-nw~="c26"] > * > tr > :nth-child(26):focus-within,
+table.tt-managed[data-tt-nw~="c27"] > * > tr > :nth-child(27):focus-within,
+table.tt-managed[data-tt-nw~="c28"] > * > tr > :nth-child(28):focus-within,
+table.tt-managed[data-tt-nw~="c29"] > * > tr > :nth-child(29):focus-within,
+table.tt-managed[data-tt-nw~="c30"] > * > tr > :nth-child(30):focus-within,
+table.tt-managed[data-tt-nw~="c31"] > * > tr > :nth-child(31):focus-within,
+table.tt-managed[data-tt-nw~="c32"] > * > tr > :nth-child(32):focus-within {
+  position: relative;
+  overflow: visible;
+}
+table.tt-managed[data-tt-nw~="c1"] > * > tr > :nth-child(1):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c2"] > * > tr > :nth-child(2):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c3"] > * > tr > :nth-child(3):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c4"] > * > tr > :nth-child(4):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c5"] > * > tr > :nth-child(5):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c6"] > * > tr > :nth-child(6):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c7"] > * > tr > :nth-child(7):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c8"] > * > tr > :nth-child(8):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c9"] > * > tr > :nth-child(9):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c10"] > * > tr > :nth-child(10):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c11"] > * > tr > :nth-child(11):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c12"] > * > tr > :nth-child(12):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c13"] > * > tr > :nth-child(13):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c14"] > * > tr > :nth-child(14):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c15"] > * > tr > :nth-child(15):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c16"] > * > tr > :nth-child(16):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c17"] > * > tr > :nth-child(17):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c18"] > * > tr > :nth-child(18):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c19"] > * > tr > :nth-child(19):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c20"] > * > tr > :nth-child(20):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c21"] > * > tr > :nth-child(21):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c22"] > * > tr > :nth-child(22):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c23"] > * > tr > :nth-child(23):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c24"] > * > tr > :nth-child(24):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c25"] > * > tr > :nth-child(25):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c26"] > * > tr > :nth-child(26):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c27"] > * > tr > :nth-child(27):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c28"] > * > tr > :nth-child(28):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c29"] > * > tr > :nth-child(29):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c30"] > * > tr > :nth-child(30):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c31"] > * > tr > :nth-child(31):focus-within > .table-cell-wrapper,
+table.tt-managed[data-tt-nw~="c32"] > * > tr > :nth-child(32):focus-within > .table-cell-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  box-sizing: border-box;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(480px, 70vw);
+  min-height: 100%;
+  background-color: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  border-radius: var(--radius-s, 4px);
+}
+table.tt-managed.tt-frz-col > * > tr > :first-child:focus-within {
+  position: sticky;
+}
+
+/* 行背景色 */
+table.tt-managed > * > tr[data-tt-color="gray"] { --tt-row-bg: var(--tt-gray); }
+table.tt-managed > * > tr[data-tt-color="red"] { --tt-row-bg: var(--tt-red); }
+table.tt-managed > * > tr[data-tt-color="orange"] { --tt-row-bg: var(--tt-orange); }
+table.tt-managed > * > tr[data-tt-color="yellow"] { --tt-row-bg: var(--tt-yellow); }
+table.tt-managed > * > tr[data-tt-color="green"] { --tt-row-bg: var(--tt-green); }
+table.tt-managed > * > tr[data-tt-color="blue"] { --tt-row-bg: var(--tt-blue); }
+table.tt-managed > * > tr[data-tt-color="purple"] { --tt-row-bg: var(--tt-purple); }
+table.tt-managed > * > tr[data-tt-color="pink"] { --tt-row-bg: var(--tt-pink); }
+
+/* 列背景色 */
+table.tt-managed[data-tt-c-gray~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-gray~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-gray~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-gray~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-gray~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-gray~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-gray~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-gray~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-gray~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-gray~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-gray~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-gray~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-gray~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-gray~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-gray~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-gray~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-gray~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-gray~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-gray~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-gray~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-gray~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-gray~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-gray~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-gray~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-gray~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-gray~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-gray~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-gray~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-gray~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-gray~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-gray~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-gray~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-gray);
+}
+table.tt-managed[data-tt-c-red~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-red~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-red~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-red~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-red~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-red~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-red~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-red~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-red~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-red~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-red~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-red~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-red~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-red~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-red~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-red~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-red~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-red~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-red~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-red~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-red~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-red~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-red~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-red~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-red~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-red~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-red~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-red~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-red~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-red~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-red~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-red~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-red);
+}
+table.tt-managed[data-tt-c-orange~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-orange~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-orange~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-orange~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-orange~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-orange~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-orange~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-orange~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-orange~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-orange~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-orange~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-orange~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-orange~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-orange~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-orange~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-orange~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-orange~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-orange~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-orange~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-orange~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-orange~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-orange~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-orange~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-orange~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-orange~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-orange~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-orange~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-orange~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-orange~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-orange~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-orange~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-orange~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-orange);
+}
+table.tt-managed[data-tt-c-yellow~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-yellow~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-yellow~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-yellow~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-yellow~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-yellow~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-yellow~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-yellow~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-yellow~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-yellow~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-yellow~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-yellow~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-yellow~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-yellow~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-yellow~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-yellow~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-yellow~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-yellow~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-yellow~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-yellow~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-yellow~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-yellow~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-yellow~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-yellow~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-yellow~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-yellow~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-yellow~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-yellow~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-yellow~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-yellow~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-yellow~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-yellow~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-yellow);
+}
+table.tt-managed[data-tt-c-green~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-green~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-green~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-green~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-green~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-green~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-green~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-green~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-green~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-green~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-green~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-green~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-green~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-green~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-green~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-green~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-green~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-green~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-green~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-green~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-green~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-green~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-green~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-green~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-green~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-green~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-green~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-green~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-green~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-green~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-green~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-green~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-green);
+}
+table.tt-managed[data-tt-c-blue~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-blue~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-blue~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-blue~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-blue~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-blue~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-blue~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-blue~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-blue~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-blue~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-blue~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-blue~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-blue~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-blue~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-blue~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-blue~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-blue~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-blue~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-blue~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-blue~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-blue~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-blue~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-blue~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-blue~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-blue~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-blue~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-blue~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-blue~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-blue~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-blue~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-blue~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-blue~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-blue);
+}
+table.tt-managed[data-tt-c-purple~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-purple~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-purple~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-purple~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-purple~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-purple~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-purple~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-purple~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-purple~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-purple~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-purple~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-purple~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-purple~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-purple~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-purple~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-purple~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-purple~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-purple~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-purple~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-purple~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-purple~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-purple~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-purple~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-purple~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-purple~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-purple~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-purple~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-purple~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-purple~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-purple~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-purple~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-purple~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-purple);
+}
+table.tt-managed[data-tt-c-pink~="c1"] > * > tr > :nth-child(1),
+table.tt-managed[data-tt-c-pink~="c2"] > * > tr > :nth-child(2),
+table.tt-managed[data-tt-c-pink~="c3"] > * > tr > :nth-child(3),
+table.tt-managed[data-tt-c-pink~="c4"] > * > tr > :nth-child(4),
+table.tt-managed[data-tt-c-pink~="c5"] > * > tr > :nth-child(5),
+table.tt-managed[data-tt-c-pink~="c6"] > * > tr > :nth-child(6),
+table.tt-managed[data-tt-c-pink~="c7"] > * > tr > :nth-child(7),
+table.tt-managed[data-tt-c-pink~="c8"] > * > tr > :nth-child(8),
+table.tt-managed[data-tt-c-pink~="c9"] > * > tr > :nth-child(9),
+table.tt-managed[data-tt-c-pink~="c10"] > * > tr > :nth-child(10),
+table.tt-managed[data-tt-c-pink~="c11"] > * > tr > :nth-child(11),
+table.tt-managed[data-tt-c-pink~="c12"] > * > tr > :nth-child(12),
+table.tt-managed[data-tt-c-pink~="c13"] > * > tr > :nth-child(13),
+table.tt-managed[data-tt-c-pink~="c14"] > * > tr > :nth-child(14),
+table.tt-managed[data-tt-c-pink~="c15"] > * > tr > :nth-child(15),
+table.tt-managed[data-tt-c-pink~="c16"] > * > tr > :nth-child(16),
+table.tt-managed[data-tt-c-pink~="c17"] > * > tr > :nth-child(17),
+table.tt-managed[data-tt-c-pink~="c18"] > * > tr > :nth-child(18),
+table.tt-managed[data-tt-c-pink~="c19"] > * > tr > :nth-child(19),
+table.tt-managed[data-tt-c-pink~="c20"] > * > tr > :nth-child(20),
+table.tt-managed[data-tt-c-pink~="c21"] > * > tr > :nth-child(21),
+table.tt-managed[data-tt-c-pink~="c22"] > * > tr > :nth-child(22),
+table.tt-managed[data-tt-c-pink~="c23"] > * > tr > :nth-child(23),
+table.tt-managed[data-tt-c-pink~="c24"] > * > tr > :nth-child(24),
+table.tt-managed[data-tt-c-pink~="c25"] > * > tr > :nth-child(25),
+table.tt-managed[data-tt-c-pink~="c26"] > * > tr > :nth-child(26),
+table.tt-managed[data-tt-c-pink~="c27"] > * > tr > :nth-child(27),
+table.tt-managed[data-tt-c-pink~="c28"] > * > tr > :nth-child(28),
+table.tt-managed[data-tt-c-pink~="c29"] > * > tr > :nth-child(29),
+table.tt-managed[data-tt-c-pink~="c30"] > * > tr > :nth-child(30),
+table.tt-managed[data-tt-c-pink~="c31"] > * > tr > :nth-child(31),
+table.tt-managed[data-tt-c-pink~="c32"] > * > tr > :nth-child(32) {
+  --tt-col-bg: var(--tt-pink);
+}

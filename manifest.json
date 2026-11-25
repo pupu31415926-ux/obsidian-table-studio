@@ -1,0 +1,10 @@
+{
+  "id": "table-studio",
+  "name": "Table Studio",
+  "version": "1.2.0",
+  "minAppVersion": "1.4.0",
+  "description": "Notion-style Markdown tables: drag to resize columns, header highlighting, table styles, roomier spacing, frozen headers, row and column colors, alignment, transpose and copy as CSV or LaTeX.",
+  "author": "YOUR_NAME",
+  "authorUrl": "https://github.com/YOUR_GITHUB_USERNAME",
+  "isDesktopOnly": false
+}
