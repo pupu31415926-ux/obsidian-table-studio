@@ -106,3 +106,6 @@ The plugin makes no network requests and collects no data.
 **保存位置**：列对齐和转置直接写进笔记（标准 Markdown）；其余设置保存在插件的 `data.json` 里，不改笔记。
 
 插件不联网，不收集任何数据。
+
+## ☕ Support Development
+If you find this plugin useful and would like to support its development, you can sponsor me via WeChat or Alipay. Any amount is welcome, thank you!
