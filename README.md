@@ -4,6 +4,8 @@ Make Markdown tables feel like Notion tables: drag column borders to resize, hig
 
 Available in English, 简体中文, 繁體中文, 日本語, 한국어, Deutsch, Français, Español, Português (Brasil) and Русский.
 
+让 Markdown 表格拥有 Notion 表格般的体验：拖动列边框调整大小、突出显示表头、选择表格样式、为行留出更多空间、固定表头行或第一列、为行和列设置颜色、对齐文本、转置，以及将表格导出为 CSV、TSV、HTML 或 LaTeX 格式。笔记仍保持纯 Markdown 格式。
+
 [中文说明](#中文说明)
 
 ## Features
