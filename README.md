@@ -125,7 +125,7 @@ If you find this plugin useful and would like to support its development, you ca
       </td>
       <td align="center">
         <img src="images/paypal.png" alt="paypal" width="180"><br>
-        <b>支付宝 Alipay</b>
+        <b>PayPal</b>
       </td>
     </tr>
   </table>
