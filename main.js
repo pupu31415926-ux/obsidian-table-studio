@@ -2059,7 +2059,7 @@ class TableStudioPlugin extends Plugin {
   showLine(table, x) {
     const doc = table.ownerDocument;
     const u = this.getUI(doc);
-    const tr = table.getBoundingClientRect();
+    const tr = this.visibleRect(table);
     const sc = table.closest('.markdown-preview-view, .cm-scroller, .markdown-embed-content');
     const cr = sc ? sc.getBoundingClientRect() : { top: 0, bottom: doc.defaultView.innerHeight };
     const top = Math.max(tr.top, cr.top);
@@ -2249,11 +2249,39 @@ class TableStudioPlugin extends Plugin {
     this.positionBtn();
   }
 
+  /** 表格所在的内部滚动框（冻结或很宽时表格在框内滚动），没有则返回 null。 */
+  scrollBoxOf(table) {
+    const doc = table.ownerDocument;
+    const win = doc.defaultView;
+    const stop = table.closest('.markdown-preview-view, .cm-scroller, .markdown-embed-content');
+    for (let el = table.parentElement; el && el !== stop && el !== doc.body; el = el.parentElement) {
+      const cs = win.getComputedStyle(el);
+      const scrolls = /(auto|scroll)/.test(cs.overflowX + ' ' + cs.overflowY);
+      if (scrolls && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1)) return el;
+    }
+    return null;
+  }
+
+  /** 表格当前可见部分的矩形：表格本身与内部滚动框的交集。 */
+  visibleRect(table) {
+    const r = table.getBoundingClientRect();
+    const box = this.scrollBoxOf(table);
+    if (!box) return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    const b = box.getBoundingClientRect();
+    return {
+      left: Math.max(r.left, b.left),
+      top: Math.max(r.top, b.top),
+      right: Math.min(r.right, b.right),
+      bottom: Math.min(r.bottom, b.bottom),
+    };
+  }
+
   positionBtn() {
     const table = this.btnTable;
     if (!table || !table.isConnected) { this.hideBtn(); return; }
     const u = this.getUI(table.ownerDocument);
-    const r = table.getBoundingClientRect();
+    // 固定在表格「可见区域」的左上角：表格在冻结 / 横向滚动框里滚动时按钮不跟着动
+    const r = this.visibleRect(table);
     const sc = table.closest('.markdown-preview-view, .cm-scroller, .markdown-embed-content');
     const cr = sc ? sc.getBoundingClientRect() : { top: 0, left: 0 };
     const left = Math.max(cr.left + 2, r.left - 26);
