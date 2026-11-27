@@ -110,21 +110,21 @@ The plugin makes no network requests and collects no data.
 插件不联网，不收集任何数据。
 
 ## ☕ Support Development
-If you find this plugin useful and would like to support its development, you can sponsor me via WeChat or Alipay. Any amount is welcome, thank you!
+If you find this plugin useful and would like to support its development, you can sponsor me via WeChat, Alipay or PayPal. Any amount is welcome, thank you!
 
 <div align="center">
   <table>
     <tr>
       <td align="center">
-        <img src="images/wechat-pay.png" alt="Wechat 微信" width="150"><br>
+        <img src="images/wechat-pay.png" alt="Wechat 微信" width="120"><br>
         <b>微信 WeChat</b>
       </td>
       <td align="center">
-        <img src="images/alipay.png" alt="Alipay 支付宝" width="150"><br>
+        <img src="images/alipay.png" alt="Alipay 支付宝" width="120"><br>
         <b>支付宝 Alipay</b>
       </td>
       <td align="center">
-        <img src="images/PayPal.png" alt="PayPal" width="150"><br>
+        <img src="images/PayPal.png" alt="PayPal" width="120"><br>
         <b>PayPal</b>
       </td>
     </tr>
