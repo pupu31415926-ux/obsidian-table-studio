@@ -1,0 +1,58 @@
+# Builds main.js / styles.css from src/, attests them (build provenance)
+# and attaches main.js, manifest.json and styles.css to the GitHub release.
+#
+# Normal use: create and publish a release on GitHub with a tag that matches
+# "version" in manifest.json (for example 1.2.2). No need to attach files by hand.
+# To add attested files to an existing release: Actions → Release assets →
+# Run workflow → enter the tag (for example 1.2.1).
+
+name: Release assets
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and attach files to (for example 1.2.1)"
+        required: true
+
+permissions:
+  contents: write      # upload files to the release
+  id-token: write      # sign the attestation
+  attestations: write  # publish the attestation
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Check that manifest.json version matches the tag
+        run: |
+          v=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+          if [ "$v" != "$TAG" ]; then
+            echo "::error::manifest.json version is $v but the release tag is $TAG. They must match."
+            exit 1
+          fi
+
+      - name: Build main.js and styles.css from src/
+        run: python3 build.py
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
+      - name: Attach files to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" main.js manifest.json styles.css --clobber
