@@ -116,15 +116,15 @@ If you find this plugin useful and would like to support its development, you ca
   <table>
     <tr>
       <td align="center">
-        <img src="images/wechat-pay.png" alt="Wechat 微信" width="180"><br>
+        <img src="images/wechat-pay.png" alt="Wechat 微信" width="150"><br>
         <b>微信 WeChat</b>
       </td>
       <td align="center">
-        <img src="images/alipay.png" alt="Alipay 支付宝" width="180"><br>
+        <img src="images/alipay.png" alt="Alipay 支付宝" width="150"><br>
         <b>支付宝 Alipay</b>
       </td>
       <td align="center">
-        <img src="images/PayPal.png" alt="PayPal" width="180"><br>
+        <img src="images/PayPal.png" alt="PayPal" width="150"><br>
         <b>PayPal</b>
       </td>
     </tr>
